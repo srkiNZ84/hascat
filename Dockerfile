@@ -12,6 +12,7 @@ COPY imagenet_class_index.json /root/.keras/models/
 
 # Our application code
 COPY app.py .
+COPY templates templates
 
 # Test data
 COPY elephant.jpg .
