@@ -16,18 +16,37 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def is_cat(classification, confidence) -> str:
+    if classification in ["tabby", "tiger_cat", "Persian_cat", "Siamese_cat", "Egyptian_cat"]:
+        print("Classification " + classification + " matches a cat!")
+        if float(confidence) > 0.15:
+            return "Yes, definitely a cat in this picture"
+        else:
+            return "There's probably a cat in this picture"
+    else:
+        print("Classification " + classification + " does not match a cat!")
+        return "No, not a cat"
+
 @app.route("/")
 def root():
     return render_template('index.html')
 
-@app.route("/classify")
+@app.route("/classify/")
+@app.route("/classify/<filename>")
 def classify(filename=None):
-    img = image.load_img(img_path, target_size=(224, 224))
+    if filename is None:
+        return "<p>No picture to found to classify</p>"
+    img = image.load_img(os.path.join('/tmp', filename), target_size=(224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
     preds = model.predict(x)
-    return "<p>Predicted: " + str(decode_predictions(preds, top=3)[0]) + "</p>"
+    dpred = decode_predictions(preds, top=1)[0]
+    predClass = str(dpred[0][1])
+    predConfidence = str(dpred[0][2])
+
+    cat = is_cat(predClass, predConfidence)
+    return "<p>Class: " + predClass + "</p><p>Confidence: " + predConfidence + "</p>" + "<p>"+cat+"</p>"
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
