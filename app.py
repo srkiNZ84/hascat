@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, flash, redirect, url_for
 import os
+import boto3
 from werkzeug.utils import secure_filename
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.preprocessing import image
@@ -9,6 +10,7 @@ import numpy as np
 model = ResNet50(weights='imagenet')
 img_path = 'elephant.jpg'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+s3 = boto3.resource('s3')
 
 app = Flask(__name__)
 
@@ -46,7 +48,7 @@ def classify(filename=None):
     predConfidence = str(dpred[0][2])
 
     cat = is_cat(predClass, predConfidence)
-    return "<p>Class: " + predClass + "</p><p>Confidence: " + predConfidence + "</p>" + "<p>"+cat+"</p>"
+    return "<p>"+cat+"</p>" + "<p>Class: " + predClass + "</p><p>Confidence: " + predConfidence + "</p>"
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
@@ -63,4 +65,5 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join('/tmp', filename))
+            s3.Bucket('cat-image-bucket').put_object(Key=filename, Body=file)
             return redirect(url_for('classify', filename=filename))
